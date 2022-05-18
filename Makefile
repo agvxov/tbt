@@ -1,13 +1,14 @@
 OBJ:=obj/
 SRC:=source/
 
-SRCF:=source/main.cpp source/io.cpp source/format.cpp source/globals.cpp source/parse.cpp
+MAIN:=source/main.cpp
+SRCF:=source/io.cpp source/format.cpp source/globals.cpp source/parse.cpp
 HF:=${SRCF:.cpp=.h}
 OF:=${SRCF:.cpp=.o}
-GITF=${SRCF} Makefile docs/*
+GITF=${SRCF} ${HF} Makefile docs/*
 
 main:
-	gcc ${SRCF} -o main.out
+	gcc ${MAIN} ${SRCF} -o main.out
 
 git:
 	git add ${GITF}
