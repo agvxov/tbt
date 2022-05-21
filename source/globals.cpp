@@ -1,21 +1,27 @@
-#include "tbt_globals.h"
+#include "globals.h"
 
 #include <vector>
 #include <string>
 #include <stdio.h>
+#include <unistd.h>
 #include "table.h"
 
 // Input
-char* csv_file = "test/test.csv";
-char* delim = ";";
+const char* ifile_name;
+const char* delim = ";";
 // Output
-FILE* output = stdout;
+const char* ofile_name = NULL;
 // Defaults
-constexpr Border DEFAULT_VERTICAL_BORDER = {'|'};
-constexpr Border DEFAULT_HORIZONTAL_BORDER = {'-'};
-constexpr char DEFAULT_CORNER = '+';
+//Border DEFAULT_VERTICAL_BORDER;
+//Border DEFAULT_HORIZONTAL_BORDER;
+//char DEFAULT_CORNER;
+// Rules
+char* rules;
 // Table Pseudo-struct
-std::vector<Column> columns;
-std::vector<Border> vborders;
-std::vector<Border> hborders;
+std::vector<std::vector<Cell>> cells;
+std::vector<size_t> col_lens;
+std::vector<size_t> inc_values;
+std::vector<std::vector<const Border*>> vborders;
+std::vector<std::vector<const Border*>> hborders;
 std::vector<std::vector<char>> corners;
+size_t inc = 0;

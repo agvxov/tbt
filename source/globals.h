@@ -3,19 +3,24 @@
 #include <vector>
 #include <string>
 #include <stdio.h>
+#include <unistd.h>
 #include "table.h"
 
 // Input
-extern char* csv_file;
-extern char* delim;
+extern const char* ifile_name;
+extern const char* delim;
 // Output
-extern FILE* output;
+extern const char* ofile_name;
 // Defaults
-extern Border DEFAULT_VERTICAL_BORDER;
-extern Border DEFAULT_HORIZONTAL_BORDER;
-extern char DEFAULT_CORNER;
+const Border DEFAULT_VERTICAL_BORDER = {'|'};
+const Border DEFAULT_HORIZONTAL_BORDER = {'-'};
+constexpr char DEFAULT_CORNER = '+';
+// Rules
+extern char* rules;
 // Table Pseudo-struct
-extern std::vector<Column> columns;
-extern std::vector<Border> vborders;
-extern std::vector<Border> hborders;
+extern std::vector<std::vector<Cell>> cells;
+extern std::vector<size_t> col_lens;
+extern std::vector<std::vector<const Border*>> vborders;
+extern std::vector<std::vector<const Border*>> hborders;
 extern std::vector<std::vector<char>> corners;
+extern size_t inc;

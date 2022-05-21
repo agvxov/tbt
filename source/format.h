@@ -1,5 +1,11 @@
 #pragma once
 
-#include "tbt_globals.h"
+#include <algorithm>
+#include <ctype.h>
+#include <string.h>
+#include "globals.h"
 
-void formatTable();
+void initTable();
+void formatCell(Cell &c, const size_t &width);
+void formatBorders(const size_t &cellx, const size_t &celly);
+void runRule(const char* rule);

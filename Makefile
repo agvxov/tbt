@@ -2,13 +2,25 @@ OBJ:=obj/
 SRC:=source/
 
 MAIN:=source/main.cpp
-SRCF:=source/io.cpp source/format.cpp source/globals.cpp source/parse.cpp
+SRCF:=source/io.cpp source/format.cpp source/globals.cpp source/parse.cpp source/errno.cpp
 HF:=${SRCF:.cpp=.h}
-OF:=${SRCF:.cpp=.o}
+OF:=$(subst source/,obj/,${SRCF:.cpp=.o})
 GITF=${SRCF} ${HF} Makefile docs/*
 
+OUTPUT=main.out
+
+CXX:=g++
+CXXFLAGS:=-g -std=c++17
+LD_FLAGS:=
+
 main:
-	gcc ${MAIN} ${SRCF} -o main.out
+	${CXX} ${MAIN} ${SRCF} -o ${OUTPUT} ${CXXFLAGS}
+
+clean:
+	rm -v ${OF}
+
+debug:
+	gdb -q ${OUTPUT}
 
 git:
 	git add ${GITF}
