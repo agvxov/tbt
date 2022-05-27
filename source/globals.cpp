@@ -24,4 +24,3 @@ std::vector<size_t> inc_values;
 std::vector<std::vector<const Border*>> vborders;
 std::vector<std::vector<const Border*>> hborders;
 std::vector<std::vector<char>> corners;
-size_t inc = 0;

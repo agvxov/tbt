@@ -23,4 +23,3 @@ extern std::vector<size_t> col_lens;
 extern std::vector<std::vector<const Border*>> vborders;
 extern std::vector<std::vector<const Border*>> hborders;
 extern std::vector<std::vector<char>> corners;
-extern size_t inc;

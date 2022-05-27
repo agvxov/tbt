@@ -46,21 +46,32 @@ void initTable(){
 		}
 		col_lens.push_back(max);
 	}
-	/* Fill corners and borders with defaults
-	 * while formatting cells
+	/* Format all cells
 	*/
 	for(int i = 0; i < cells.size(); i++){
-		corners.push_back(std::vector<char>());
-		vborders.push_back(std::vector<const Border*>());
-		hborders.push_back(std::vector<const Border*>());
-		for(int h = 0; h < cells[i].size(); h++){
-			corners.back().push_back(DEFAULT_CORNER);
-			vborders[i].push_back(&DEFAULT_VERTICAL_BORDER);
-			hborders[i].push_back(&DEFAULT_HORIZONTAL_BORDER);
+		for(int h = 0; h < cells[0].size(); h++){
 			formatCell(cells[i][h], col_lens[h]);
 		}
-		corners.back().push_back(DEFAULT_CORNER);
-		vborders[i].push_back(&DEFAULT_VERTICAL_BORDER);
+	}
+	/* Fill borders and corners with defaults
+	*/
+	for(int i = 0; i < cells.size() + 1; i++){	// Horizontal borders
+		hborders.push_back(std::vector<const Border*>());
+		for(int h = 0; h < cells[0].size(); h++){
+			hborders[i].push_back(&DEFAULT_HORIZONTAL_BORDER);
+		}
+	}
+	for(int i = 0; i < cells.size(); i++){		// Vertical borders
+		vborders.push_back(std::vector<const Border*>());
+		for(int h = 0; h < cells[0].size() + 1; h++){
+			vborders[i].push_back(&DEFAULT_VERTICAL_BORDER);
+		}
+	}
+	for(int i = 0; i < cells.size() + 1; i++){	// Corners
+		corners.push_back(std::vector<char>());
+		for(int h = 0; h < cells[0].size() + 1; h++){
+			corners.back().push_back(DEFAULT_CORNER);
+		}
 	}
 	/* Split rules and apply each
 	*/
@@ -77,34 +88,20 @@ void initTable(){
 }
 
 void formatCell(Cell &c, const size_t &width){
-	if(inc){
-		switch(c.inc_mode){
-			case text_incement::DEC:
-				c.rendered_str = std::to_string(c.inc_val);
-				break;
-			case text_incement::HEX:
-				//c.rendered_str = c.inc_val;
-				break;
-			case text_incement::ROMAN:
-				//c.rendered_str = to_roman(c.inc_val);
-				break;
-		}
-	}else{
-		c.rendered_str = c.str;
-	}
+	c.rendered_str = c.str;
 	switch(c.format){
 		case text_format::NORMAL:
 			break;
 		case text_format::LOWER:
-			std::transform(c.str.begin(), c.str.end(), c.str.begin(), tolower);
+			std::transform(c.str.begin(), c.str.end(), c.rendered_str.begin(), tolower);
 			break;
 		case text_format::UPPER:
-			std::transform(c.str.begin(), c.str.end(), c.str.begin(), toupper);
+			std::transform(c.str.begin(), c.str.end(), c.rendered_str.begin(), toupper);
 			break;
 		case text_format::CAMEL:
-			for(int i = 0; i < c.rendered_str.size(); i++){	// trimming guarantees this doesnt overflow
+			for(int i = 0; i < c.rendered_str.size() - 1; i++){	// trimming guarantees this doesnt overflow
 				if(c.str[i] == ' '){
-					c.str[i + 1] = toupper(c.str[i + 1]);
+					c.rendered_str[i + 1] = toupper(c.str[i + 1]);
 				}
 			}
 			break;
@@ -146,115 +143,238 @@ void formatBorder(Border* &b, const char &c,
 	b->mode = m;
 }
 
+int getScope(const std::string &rule, int &hs, int &he, int &vs, int &ve){
+	auto strToPos = [](const std::string str, const bool &line) -> int {
+		if(str == "$"){
+			if(line){
+				return cells[0].size() + 1;
+			}else{
+				return cells.size() + 1;
+			}
+		}else{
+			return std::stoi(str);
+		}
+	};
+	try{
+		int x;
+		int ptr = 0;
+		// ptr = 0 -> x
+		while(isdigit(rule[ptr]) || rule[ptr] == '-' || rule[ptr] == '$'){
+			++ptr;
+		}
+		if(rule[ptr] == 'x'){
+			x = ptr;
+			int h = rule.find('-');
+			if(h != std::string::npos){
+				hs = strToPos(rule.substr(0, h), true);
+				he = strToPos(rule.substr(h + 1, x - h - 1), true) + 1;	// + 1: so its inclusive
+			}else{
+				hs = strToPos(rule.substr(0, x), true);
+				he = hs + 1;
+			}
+		}else if(rule[ptr] == 'n'){
+			hs = 1;
+			he = cells.size() + 1;
+			if(not(ptr + 1 >= rule.size()) && (++ptr, rule[ptr] == 'x')){
+				x = ptr;
+			}else{
+				goto NONSENSE_SCOPE;
+			}
+		}else{
+			NONSENSE_SCOPE:
+			throw (Warning){BAD_RULE_WARNING, BAD_RULE " (non-sensical scope)"};
+		}
+		++ptr;
+		// ptr = x -> scope_end
+		while(isdigit(rule[ptr]) || rule[ptr] == '-' || rule[ptr] == '$'){
+			++ptr;
+		}
+		if(rule[ptr] == 'n'){
+			vs = 1;
+			ve = cells[0].size() + 1;
+			++ptr;
+		}else{
+			int h = rule.find('-', x);
+			if(h != std::string::npos){
+				vs = strToPos(rule.substr(0, h), false);
+				ve = strToPos(rule.substr(h + 1, x - h - 1), false) + 1;	// + 1: so its inclusive
+			}else{
+				vs = strToPos(rule.substr(x + 1, ptr - x), false);
+				ve = vs + 1;
+			}
+		}
+		return ptr;
+	}catch(std::invalid_argument){
+		throw (Warning){BAD_RULE_WARNING, BAD_RULE " (specified scope is not a number)"};
+	}
+}
+
 void runRule(std::string rule){
-	/* Determine scope and command string
-	*/
-	int x = rule.find('x');
-	if(x == std::string::npos){ throw (Warning){BAD_RULE_WARNING, BAD_RULE " ('x' missing from scope)"}; }
-	int rangeLine = std::stoi(rule.substr(0, x));
-	auto notDigit = [](const char& c) -> bool { return not isdigit(c); };
-	int endOfScope = find_if(rule.begin() + (x+1), rule.end(), notDigit) - rule.begin();
-	int rangeCol = std::stoi(rule.substr(x+1, endOfScope - (x+1)));
-	rule = rule.substr(endOfScope);
 	if(rule == ""){ throw (Warning){BAD_RULE_WARNING, BAD_RULE " (No command supplied)"}; }
+
+	/* Determine scope and cut $rule to command string
+	*/
+	int hs, he, 
+		vs, ve;
+	rule = rule.substr(getScope(rule, hs, he, vs, ve));
+
+	/* Sanity check
+	*/
+	if(hs > he || vs > ve){
+		throw (Warning){BAD_RULE_RANGE_WARNING, "(negative range specified)"};
+	}
+	if(hs == he || vs == ve){
+		throw (Warning){BAD_RULE_RANGE_WARNING, "(null range specified)"};
+	}
+
+	/* Convert user supplied 1 indexed positions to 0 indexed ones
+	*/
+	--hs;
+	--vs;
+	--he;
+	--ve;
 
 	/* Boundary check
 	*/
-	if(rangeLine < 1 || rangeCol < 1 ||
-			cells.size() < rangeLine || cells[0].size() < rangeCol){
-		std::string msg("Rule contained a cell that was out of the bounds of the table.");
-		msg += " (" + std::to_string(rangeLine) + ";" + std::to_string(rangeCol) + ")";
-		throw (Warning){RULE_OF_RANGE_WARNING, msg};
+	if(hs < 0 || vs < 0 ||
+			cells.size() < he || cells[0].size() < ve){
+		throw (Warning){BAD_RULE_RANGE_WARNING, "Rule contained a cell that was out of the bounds of the table."};
 	}
 
-	/* Lower the values to represent indexes
+	/* Set inner cell inner state he
+s acording to format
 	*/
-	--rangeLine;
-	--rangeCol;
-
-	/* Set inner cell inner states acording to format
-	*/
-	{
-		const Border* &leftBorder = vborders[rangeLine][rangeCol];
-		const Border* &rightBorder = vborders[rangeLine][rangeCol + 1];
-		const Border* &topBorder = hborders[rangeLine][rangeCol];
-		const Border* &bottomBorder = hborders[rangeLine + 1][rangeCol];
-		Border* b = new Border;
-		int i = 0;
-		border_mode m = border_mode::NORMAL;
-		auto setBorderMode = [&](const Border* &b){
-					char* c = nullptr;
-					bool changed = false;
-					if(i + 1 == rule.size()){ throw (Warning){BAD_RULE_WARNING, BAD_RULE " (end of command reached after 'b')"}; }
-					++i;
-					switch(rule[i]){
-						case 'n':
-							m = border_mode::NORMAL;
-							changed = true;
+	for(int line = hs; line < he; line++){
+		for(int col = vs; col < ve; col++){
+			/* Aliasing for sanitys sake */
+			const Border* &leftBorder = vborders[line][col];
+			const Border* &rightBorder = vborders[line][col + 1];
+			const Border* &topBorder = hborders[line][col];
+			const Border* &bottomBorder = hborders[line + 1][col];
+			char &ULCorner = corners[line][col];
+			char &URCorner = corners[line][col + 1];
+			char &LLCorner = corners[line + 1][col];
+			char &LRCorner = corners[line + 1][col + 1];
+			Cell &cell = cells[line][col];
+			/**/
+			Border* b = new Border;
+			int i = 0;
+			border_mode m = border_mode::NORMAL;
+			auto setCorner = [&](char &c){
+						if(i + 1 == rule.size()){ throw (Warning){BAD_RULE_WARNING, BAD_RULE " (end of command reached after corner specifier)"}; }
+						++i;
+						c = rule[i];
+			};
+			auto setBorderMode = [&](const Border* &b){
+						char* c = nullptr;
+						bool changed = false;
+						if(i + 1 == rule.size()){ throw (Warning){BAD_RULE_WARNING, BAD_RULE " (end of command reached after border specifier)"}; }
+						++i;
+						switch(rule[i]){
+							case 'n':
+								m = border_mode::NORMAL;
+								changed = true;
+							break;
+							case 'd':
+								m = border_mode::DOTTED;
+								changed = true;
+							break;
+							case 'i':
+								m = border_mode::INVISIBLE;
+								changed = true;
+							break;
+							case ':':
+								if(i + 1 == rule.size()){ throw (Warning){BAD_RULE_WARNING, BAD_RULE " (end of command reached after ':')"}; }
+								++i;
+								c = new char(rule[i]);
+								changed = true;
+							default:
+								if(not changed){
+									throw (Warning){BAD_RULE_WARNING, BAD_RULE " (invalid char after border specifier)"};
+								}else{ break; }
+						}
+						if(c == nullptr){
+							c = new char(b->c);
+						}
+						formatBorder(const_cast<Border*&>(b), *c, m);
+						delete c;
+					};
+			while(i < rule.size()){
+				switch(rule[i]){
+					case '<':
+						cell.align = text_align::LEFT;
 						break;
-						case 'd':
-							m = border_mode::DOTTED;
-							changed = true;
+					case '=':
+						cell.align = text_align::CENTER;
 						break;
-						case 'i':
-							m = border_mode::INVISIBLE;
-							changed = true;
+					case '>':
+						cell.align = text_align::RIGHT;
 						break;
-						case ':':
-							if(i + 1 == rule.size()){ throw (Warning){BAD_RULE_WARNING, BAD_RULE " (end of command reached after ':')"}; }
-							++i;
-							c = new char(rule[i]);
-							changed = true;
-						default:
-							if(not changed){
-								throw (Warning){BAD_RULE_WARNING, BAD_RULE " (invalid char after 'b')"};
-							}else{ break; }
-					}
-					if(c == nullptr){
-						c = new char(b->c);
-					}
-					formatBorder(const_cast<Border*&>(b), *c, m);
-					delete c;
-				};
-		while(i < rule.size()){
-			switch(rule[i]){
-				case '<':
-					cells[rangeLine][rangeCol].align = text_align::LEFT;
-					break;
-				case '=':
-					cells[rangeLine][rangeCol].align = text_align::CENTER;
-					break;
-				case '>':
-					cells[rangeLine][rangeCol].align = text_align::RIGHT;
-					break;
-				case 'b':
-					{
-						int h = i;
+					case 'A':
+						cell.format = text_format::UPPER;
+						break;
+					case 'V':
+						cell.format = text_format::LOWER;
+						break;
+					case 'c':
+						cell.format = text_format::CAMEL;
+						break;
+					case 'n':
+						cell.format = text_format::NORMAL;
+						break;
+					case 'H':
+						setCorner(ULCorner);
+						break;
+					case 'J':
+						setCorner(URCorner);
+						break;
+					case 'K':
+						setCorner(LLCorner);
+						break;
+					case 'L':
+						setCorner(LRCorner);
+						break;
+					case 'C':
+						setCorner(ULCorner);
+						setCorner(URCorner);
+						setCorner(LLCorner);
+						setCorner(LRCorner);
+						break;
+					case 'b':
+						{
+							int j, h = i;
+							setBorderMode(leftBorder);
+							j = i;
+							i = h;
+							setBorderMode(rightBorder);
+							i = h;
+							setBorderMode(topBorder);
+							i = h;
+							setBorderMode(bottomBorder);
+							i = j;
+						}
+						break;
+					case 'h':
 						setBorderMode(leftBorder);
-						i = h;
-						setBorderMode(rightBorder);
-						i = h;
-						setBorderMode(topBorder);
-						i = h;
+						break;
+					case 'j':
 						setBorderMode(bottomBorder);
-						i = h;
-					break;
-					}
-				case 'h':
-					setBorderMode(leftBorder);
-					break;
-				case 'j':
-					setBorderMode(bottomBorder);
-					break;
-				case 'l':
-					setBorderMode(topBorder);
-					break;
-				case 'k':
-					setBorderMode(rightBorder);
-					break;
+						break;
+					case 'k':
+						setBorderMode(topBorder);
+						break;
+					case 'l':
+						setBorderMode(rightBorder);
+						break;
+					default:
+						std::string msg = BAD_RULE " (unrecognized char '";
+						msg += rule[i];
+						msg += "' in rule)";
+						throw (Warning){BAD_RULE_WARNING, msg.c_str()};
+				}
+				i++;
 			}
-			i++;
+			formatCell(cell, col_lens[col]);
 		}
 	}
-	formatCell(cells[rangeLine][rangeCol], col_lens[rangeCol]);
 }
