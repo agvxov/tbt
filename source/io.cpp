@@ -28,6 +28,20 @@ void readTable(){
 	fclose(input);
 }
 
+void readRules(const char* file){
+	FILE* input;
+	input = fopen(file, "r");
+	if(not input){ throw inputError; }
+	char* line = NULL;
+	size_t j = 0;
+	while(getline(&line, &j, input) != -1){
+		line[strlen(line)-1] = '\00';
+		rules.push_back(line);
+	}
+
+	fclose(input);
+}
+
 void writeTable(){
 	FILE* output;
 	if(ofile_name){

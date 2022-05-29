@@ -8,4 +8,5 @@
 #include "globals.h"
 
 void readTable();
+void readRules(const char* file);
 void writeTable();

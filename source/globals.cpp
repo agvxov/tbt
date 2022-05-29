@@ -16,7 +16,7 @@ const char* ofile_name = NULL;
 //Border DEFAULT_HORIZONTAL_BORDER;
 //char DEFAULT_CORNER;
 // Rules
-char* rules;
+std::vector<const char*> rules;
 // Table Pseudo-struct
 std::vector<std::vector<Cell>> cells;
 std::vector<size_t> col_lens;

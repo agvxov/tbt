@@ -73,17 +73,14 @@ void initTable(){
 			corners.back().push_back(DEFAULT_CORNER);
 		}
 	}
-	/* Split rules and apply each
+	/* Run every rule
 	*/
-	constexpr char rdelim[] = ";";
-	char* r = strtok(rules, rdelim);
-	while(r != NULL){
+	for(int i = 0; i < rules.size(); i++){
 		try{
-			runRule(r);
+			runRule(rules[i]);
 		}catch(Warning w){
 			fprintf(stderr, "Warning: %s\n", w.what.c_str());
 		}
-		r = strtok(NULL, rdelim);
 	}
 }
 

@@ -16,7 +16,7 @@ const Border DEFAULT_VERTICAL_BORDER = {'|'};
 const Border DEFAULT_HORIZONTAL_BORDER = {'-'};
 constexpr char DEFAULT_CORNER = '+';
 // Rules
-extern char* rules;
+extern std::vector<const char*> rules;
 // Table Pseudo-struct
 extern std::vector<std::vector<Cell>> cells;
 extern std::vector<size_t> col_lens;

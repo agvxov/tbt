@@ -3,7 +3,7 @@ SRC:=source/
 
 MAIN:=source/main.cpp
 SRCF:=source/io.cpp source/format.cpp source/globals.cpp source/parse.cpp source/errno.cpp
-HF:=${SRCF:.cpp=.h} source/help.h
+HF:=${SRCF:.cpp=.h} source/help.h source/table.h
 OF:=$(subst source/,obj/,${SRCF:.cpp=.o})
 GITF=${MAIN} ${SRCF} ${HF} Makefile docs/*
 

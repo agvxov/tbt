@@ -7,6 +7,7 @@ const char HELP_MSG[] = R"DEL(
 		-o [file]	: set output to [file]; if not specified use stdout
 		-d [char]	: set the delimeter the input csv uses
 		-r [rule]+	: specify a semicolon separated list of [rule]s to be processed
+		-f [file] 	: specify file from which new line separated rules to be read
 
 		[rule]:
 			[scope][command]+
