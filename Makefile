@@ -16,8 +16,13 @@ LD_FLAGS:=
 main:
 	${CXX} ${MAIN} ${SRCF} -o ${OUTPUT} ${CXXFLAGS}
 
+production:
+	${CXX} ${MAIN} ${SRCF} -o tbt ${CXXFLAGS} -O3
+
 clean:
-	rm -v ${OF}
+	-rm -v ${OF}
+	-rm ${OUTPUT}
+	-rm tbt
 
 debug:
 	gdb -q ${OUTPUT}
@@ -25,3 +30,10 @@ debug:
 git:
 	git add ${GITF}
 	git commit ${GITF}
+
+tarball:
+	cd ../; \
+	tar -c -z tbt/ -f tbt-1.0.tar.gz	
+
+install: production
+	mv tbt /usr/bin/tbt
