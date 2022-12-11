@@ -6,6 +6,7 @@ SRCF:=source/io.cpp source/format.cpp source/globals.cpp source/parse.cpp source
 HF:=${SRCF:.cpp=.h} source/help.h source/table.h
 OF:=$(subst source/,obj/,${SRCF:.cpp=.o})
 GITF=${MAIN} ${SRCF} ${HF} Makefile docs/*
+VERSION:=$(shell git tag | tail -1 | cut -c2-)
 
 OUTPUT=main.out
 
@@ -32,8 +33,11 @@ git:
 	git commit ${GITF}
 
 tarball:
-	cd ../; \
-	tar -c -z tbt/ -f tbt-1.0.tar.gz	
+	tarball_from_project
+
+dist: tarball
+	mv tbt-${VERSION}.tar.gz /var/cache/distfiles/
 
 install: production
-	mv tbt /usr/bin/tbt
+	mkdir -p ${DESTDIR}/usr/bin
+	mv tbt ${DESTDIR}/usr/bin/
