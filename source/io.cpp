@@ -9,9 +9,7 @@
 
 void readTable(){
 	FILE* input = fopen(ifile_name, "r");
-	if(not input){
-		throw inputError;
-	}
+	if(not input) throw inputError;
 	char* line = NULL;
 	size_t j = 0;
 	while(getline(&line, &j, input) != -1){
@@ -24,6 +22,9 @@ void readTable(){
 		auto &last_alias = cells.back().back().str;
 		last_alias = last_alias.substr(0, last_alias.size() - 1);	// remove last \n
 	}
+
+	// File was empty
+	if(cells.size() == 0) exit(0);
 
 	fclose(input);
 }
